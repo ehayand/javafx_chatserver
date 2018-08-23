@@ -10,80 +10,12 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
 
-import java.net.InetSocketAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.util.Iterator;
-import java.util.Vector;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
 public class Main extends Application {
-
-    public static ExecutorService threadPool;
-    public static Vector<Client> clients = new Vector<>();
-
-    ServerSocket serverSocket;
-
-    public void startServer(String IP, int port) {
-        try {
-            serverSocket = new ServerSocket();
-            serverSocket.bind(new InetSocketAddress(IP, port));
-        } catch (Exception e) {
-            e.printStackTrace();
-            if (!serverSocket.isClosed()) {
-                stopServer();
-            }
-            return;
-        }
-
-        Runnable thread = new Runnable() {
-            @Override
-            public void run() {
-                while (true) {
-                    try {
-                        Socket socket = serverSocket.accept();
-                        clients.add(new Client(socket));
-                        System.out.println("[클라이언트 접속] "
-                                + socket.getRemoteSocketAddress()
-                                + ": " + Thread.currentThread().getName());
-                    } catch (Exception e) {
-                        if (!serverSocket.isClosed()) {
-                            stopServer();
-                        }
-                        break;
-                    }
-                }
-            }
-        };
-        threadPool = Executors.newCachedThreadPool();
-        threadPool.submit(thread);
-    }
-
-    public void stopServer() {
-        try {
-            Iterator<Client> iterator = clients.iterator();
-            while (iterator.hasNext()) {
-                Client client = iterator.next();
-                client.socket.close();
-                iterator.remove();
-            }
-
-            if (serverSocket != null && !serverSocket.isClosed()) {
-                serverSocket.close();
-            }
-
-            if (threadPool != null && !threadPool.isShutdown()) {
-                threadPool.shutdown();
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
 
     @Override
     public void start(Stage primaryStage) throws Exception {
+        Controller controller = new Controller();
+        
         BorderPane root = new BorderPane();
         root.setPadding(new Insets(5));
 
@@ -102,14 +34,14 @@ public class Main extends Application {
 
         toggleButton.setOnAction(event -> {
             if ("시작하기".equals(toggleButton.getText())) {
-                startServer(IP, port);
+                controller.startServer(IP, port);
                 Platform.runLater(() -> {
                     String message = String.format("[서버 시작]\n", IP, port);
                     textArea.appendText(message);
                     toggleButton.setText("종료하기");
                 });
             } else {
-                stopServer();
+                controller.stopServer();
                 Platform.runLater(() -> {
                     String message = String.format("[서버 종료]\n", IP, port);
                     textArea.appendText(message);
@@ -120,7 +52,7 @@ public class Main extends Application {
 
         Scene scene = new Scene(root, 400, 400);
         primaryStage.setTitle("[채팅 서버]");
-        primaryStage.setOnCloseRequest(event -> stopServer());
+        primaryStage.setOnCloseRequest(event -> controller.stopServer());
         primaryStage.setScene(scene);
         primaryStage.show();
     }
