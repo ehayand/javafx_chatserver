@@ -1,5 +1,7 @@
 package application;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -9,7 +11,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * Created by ehay@naver.com on 2018-08-24
+ * Created by ehay@naver.com on 2018-12-15
  * Blog : http://ehay.tistory.com
  * Github : http://github.com/ehayand
  */
@@ -17,10 +19,24 @@ import java.util.concurrent.Executors;
 public class Controller {
     public static ExecutorService threadPool;
     public static Vector<Client> clients = new Vector<>();
+    public static StringBuilder serverLog = new StringBuilder();
+    public static final int LOG_MAX_SIZE = 100;
 
     ServerSocket serverSocket;
 
     public void startServer(String IP, int port) {
+        try {
+            FileWriter fw = new FileWriter("C:\\IOTest\\network.txt");
+            BufferedWriter bw = new BufferedWriter(fw);
+
+            bw.write(serverLog.toString());
+            bw.flush();
+            bw.close();
+            fw.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
         try {
             serverSocket = new ServerSocket();
             serverSocket.bind(new InetSocketAddress(IP, port));
@@ -51,6 +67,7 @@ public class Controller {
                 }
             }
         };
+
         threadPool = Executors.newCachedThreadPool();
         threadPool.submit(thread);
     }
@@ -72,8 +89,53 @@ public class Controller {
                 threadPool.shutdown();
             }
 
+            FileWriter fw = new FileWriter("C:\\IOTest\\network.txt", true);
+            BufferedWriter bw = new BufferedWriter(fw);
+
+            bw.write(serverLog.toString());
+            bw.flush();
+            bw.close();
+            fw.close();
+
+            System.out.println("[서버 종료] : 메세지 로그 저장");
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    public static void logService(String message, String socketData) {
+        Runnable logThread = new Runnable() {
+            @Override
+            public void run() {
+                synchronized (serverLog) {
+
+                    serverLog.append("{ { ")
+                            .append(socketData)
+                            .append(" }, ")
+                            .append(message)
+                            .append(" }, ");
+
+                    if (serverLog.length() > LOG_MAX_SIZE) {
+                        try {
+                            FileWriter fw = new FileWriter("C:\\IOTest\\network.txt", true);
+                            BufferedWriter bw = new BufferedWriter(fw);
+
+                            bw.write(serverLog.toString());
+                            bw.flush();
+                            bw.close();
+                            fw.close();
+
+                            System.out.println("[로그 사이즈 초과] : 메세지 로그 저장 및 초기화");
+
+                            serverLog = new StringBuilder();
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
+        };
+
+        threadPool.submit(logThread);
     }
 }

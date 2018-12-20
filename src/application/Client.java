@@ -6,7 +6,7 @@ import java.io.OutputStream;
 import java.net.Socket;
 
 /**
- * Created by ehay@naver.com on 2018-08-22
+ * Created by ehay@naver.com on 2018-12-15
  * Blog : http://ehay.tistory.com
  * Github : http://github.com/ehayand
  */
@@ -30,6 +30,7 @@ public class Client {
                         byte[] buffer = new byte[512];
                         int length = in.read(buffer);
                         while (length == -1) throw new IOException();
+
                         System.out.println("[메세지 수신 성공] "
                                 + socket.getRemoteSocketAddress()
                                 + ": " + Thread.currentThread().getName());
@@ -37,6 +38,9 @@ public class Client {
                         for (Client client : Controller.clients) {
                             client.send(message);
                         }
+
+                        Controller.logService(message, socket.getRemoteSocketAddress().toString());
+                        Main.receive(message);
                     }
                 } catch (Exception e) {
                     try {
@@ -50,6 +54,7 @@ public class Client {
                 }
             }
         };
+
         Controller.threadPool.submit(thread);
     }
 
@@ -78,5 +83,4 @@ public class Client {
 
         Controller.threadPool.submit(thread);
     }
-
 }
