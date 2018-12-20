@@ -10,16 +10,24 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
 
+/**
+ * Created by ehay@naver.com on 2018-12-15
+ * Blog : http://ehay.tistory.com
+ * Github : http://github.com/ehayand
+ */
+
 public class Main extends Application {
+
+    private static TextArea textArea;
 
     @Override
     public void start(Stage primaryStage) throws Exception {
         Controller controller = new Controller();
-        
+
         BorderPane root = new BorderPane();
         root.setPadding(new Insets(5));
 
-        TextArea textArea = new TextArea();
+        textArea = new TextArea();
         textArea.setEditable(false);
         textArea.setFont(new Font("나눔고딕", 15));
         root.setCenter(textArea);
@@ -55,6 +63,16 @@ public class Main extends Application {
         primaryStage.setOnCloseRequest(event -> controller.stopServer());
         primaryStage.setScene(scene);
         primaryStage.show();
+    }
+
+    public static void receive(String message) {
+        try {
+            Platform.runLater(() -> {
+                textArea.appendText(message);
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public static void main(String[] args) {
